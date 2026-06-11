@@ -1,22 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #0a0a0b;
-  --color-surface: #141416;
-  --color-surface-2: #1a1a1d;
-  --color-row: #161618;
-  --color-border: #262629;
-  --color-border-soft: #1f1f22;
-  --color-fg: #fafafa;
-  --color-muted: #8a8a8f;
-  --color-muted-2: #6a6a70;
-  --color-yellow: #ffd60a;
-  --color-green: #2fbf71;
-  --color-green-bright: #34d399;
-  --color-red: #ff4d4d;
+  --color-bg: #121414;
+  --color-surface: #171b1a;
+  --color-surface-2: #1e2321;
+  --color-row: #171b1a;
+  --color-border: #93d6a0;
+  --color-border-soft: rgba(147, 214, 160, 0.2);
+  --color-fg: #ededed;
+  --color-muted: #8d9b91;
+  --color-muted-2: #66766b;
 
-  --font-display: var(--font-archivo);
-  --font-mono: var(--font-space-mono);
+  --color-yellow: #f0c24f;
+  --color-green: #5fd38a;
+  --color-green-bright: #7ee0a0;
+  --color-red: #f06d6d;
+  --color-lavender: #aab4f0;
+
+  --font-display: var(--font-jetbrains);
+  --font-mono: var(--font-jetbrains);
 }
 
 html {
@@ -31,5 +33,5 @@ body {
 }
 
 ::selection {
-  background-color: color-mix(in srgb, var(--color-yellow) 30%, transparent);
+  background-color: color-mix(in srgb, var(--color-green) 28%, transparent);
 }

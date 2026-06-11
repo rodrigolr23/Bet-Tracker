@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bet Tracker — Mockup</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0f17;
+    --surface: #131a26;
+    --surface-2: #1b2433;
+    --border: #233044;
+    --text: #e6edf6;
+    --muted: #8b9bb4;
+    --green: #2ecc71;
+    --red: #ff5d5d;
+    --accent: #5b9dff;
+    --accent-soft: rgba(91,157,255,.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    background: radial-gradient(1200px 600px at 80% -10%, #15203a 0%, var(--bg) 55%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), #8b5bff);
+    display: grid; place-items: center; font-weight: 800; font-size: 20px;
+  }
+  .brand h1 { font-size: 20px; letter-spacing: .3px; }
+  .brand span { color: var(--muted); font-size: 13px; }
+  .banca-box { text-align: right; }
+  .banca-box .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .banca-box .value { font-size: 30px; font-weight: 800; }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+  .pill.up { color: var(--green); background: rgba(46,204,113,.12); }
+  .pill.down { color: var(--red); background: rgba(255,93,93,.12); }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 18px;
+  }
+  .kpi .k-label { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .kpi .k-value { font-size: 26px; font-weight: 800; }
+  .kpi .k-sub { font-size: 12px; margin-top: 6px; color: var(--muted); }
+
+  .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 22px; }
+  .card h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+  .card .hint { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .chart-holder { position: relative; height: 260px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px;
+       text-transform: uppercase; letter-spacing: .5px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px; border-bottom: 1px solid rgba(35,48,68,.5); }
+  tr:last-child td { border-bottom: none; }
+  .tag { font-size: 11px; padding: 3px 9px; border-radius: 6px; font-weight: 700; }
+  .tag.green { color: var(--green); background: rgba(46,204,113,.12); }
+  .tag.red { color: var(--red); background: rgba(255,93,93,.12); }
+  .tag.pend { color: #ffd166; background: rgba(255,209,102,.12); }
+  .casa { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .pos { color: var(--green); font-weight: 700; }
+  .neg { color: var(--red); font-weight: 700; }
+  .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .btn { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(91,157,255,.25);
+         padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .mock-banner {
+    background: rgba(255,209,102,.08); border: 1px dashed rgba(255,209,102,.3);
+    color: #ffd166; font-size: 12.5px; padding: 10px 14px; border-radius: 10px;
+    margin-bottom: 20px; text-align: center;
+  }
+  @media (max-width: 880px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="mock-banner">⚠️ Mockup visual com dados de exemplo — sem backend. Serve só pra fechar o layout antes do projeto real.</div>
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">B</div>
+      <div>
+        <h1>Bet Tracker</h1>
+        <span>Contabilizador de apostas</span>
+      </div>
+    </div>
+    <div class="banca-box">
+      <div class="label">Banca atual</div>
+      <div class="value">R$ 2.847,50 <span class="pill up">+13,9%</span></div>
+    </div>
+  </header>
+
+  <section class="kpis">
+    <div class="card kpi">
+      <div class="k-label">Lucro total</div>
+      <div class="k-value pos">+ R$ 347,50</div>
+      <div class="k-sub">sobre R$ 2.500 inicial</div>
+    </div>
+    <div class="card kpi">
+      <div class="k-label">ROI</div>
+      <div class="k-value pos">+ 9,8%</div>
+      <div class="k-sub">retorno sobre o apostado</div>
+    </div>
+    <div class="card kpi">
+      <div class="k-label">Taxa de acerto</div>
+      <div class="k-value">54,2%</div>
+      <div class="k-sub">26 green · 22 red</div>
+    </div>
+    <div class="card kpi">
+      <div class="k-label">Total apostado</div>
+      <div class="k-value">R$ 3.540</div>
+      <div class="k-sub">48 apostas · odd média 1,92</div>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <h3>Evolução da banca <span class="hint">— últimos 30 dias</span></h3>
+      <div class="chart-holder"><canvas id="bancaChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Lucro por casa de aposta</h3>
+      <div class="chart-holder"><canvas id="casaChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <h3>Apostas recentes</h3>
+      <button class="btn">+ Nova aposta</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th><th>Evento</th><th>Casa</th><th>Mercado</th>
+          <th>Odd</th><th>Valor</th><th>Status</th><th>Lucro</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>11/06</td><td>Flamengo x Palmeiras</td>
+          <td><span class="casa"><span class="dot" style="background:#0a8a3a"></span>Bet365</span></td>
+          <td>Casa vence</td><td>1,85</td><td>R$ 100</td>
+          <td><span class="tag green">Green</span></td><td class="pos">+ R$ 85,00</td>
+        </tr>
+        <tr>
+          <td>10/06</td><td>Lakers x Celtics</td>
+          <td><span class="casa"><span class="dot" style="background:#e8a200"></span>Betano</span></td>
+          <td>Over 215,5</td><td>1,95</td><td>R$ 80</td>
+          <td><span class="tag red">Red</span></td><td class="neg">− R$ 80,00</td>
+        </tr>
+        <tr>
+          <td>10/06</td><td>Djokovic x Alcaraz</td>
+          <td><span class="casa"><span class="dot" style="background:#1565c0"></span>Superbet</span></td>
+          <td>Alcaraz vence</td><td>2,10</td><td>R$ 60</td>
+          <td><span class="tag green">Green</span></td><td class="pos">+ R$ 66,00</td>
+        </tr>
+        <tr>
+          <td>09/06</td><td>Man City x Arsenal</td>
+          <td><span class="casa"><span class="dot" style="background:#0a8a3a"></span>Bet365</span></td>
+          <td>Ambas marcam</td><td>1,72</td><td>R$ 120</td>
+          <td><span class="tag green">Green</span></td><td class="pos">+ R$ 86,40</td>
+        </tr>
+        <tr>
+          <td>09/06</td><td>Brasil x Argentina</td>
+          <td><span class="casa"><span class="dot" style="background:#7b2ff7"></span>KTO</span></td>
+          <td>Empate</td><td>3,20</td><td>R$ 50</td>
+          <td><span class="tag pend">Pendente</span></td><td class="hint">—</td>
+        </tr>
+        <tr>
+          <td>08/06</td><td>Real Madrid x Barcelona</td>
+          <td><span class="casa"><span class="dot" style="background:#e8a200"></span>Betano</span></td>
+          <td>Over 2,5 gols</td><td>1,68</td><td>R$ 100</td>
+          <td><span class="tag red">Red</span></td><td class="neg">− R$ 100,00</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+  const fmt = (v) => 'R$ ' + v.toLocaleString('pt-BR');
+  const grid = '#233044', muted = '#8b9bb4';
+
+  new Chart(document.getElementById('bancaChart'), {
+    type: 'line',
+    data: {
+      labels: ['12/05','15/05','18/05','21/05','24/05','27/05','30/05','02/06','05/06','08/06','11/06'],
+      datasets: [{
+        data: [2500, 2580, 2440, 2620, 2710, 2650, 2780, 2700, 2810, 2760, 2847],
+        borderColor: '#5b9dff', borderWidth: 2.5, tension: .35,
+        fill: true, pointRadius: 0, pointHoverRadius: 5,
+        backgroundColor: (ctx) => {
+          const g = ctx.chart.ctx.createLinearGradient(0,0,0,260);
+          g.addColorStop(0,'rgba(91,157,255,.28)'); g.addColorStop(1,'rgba(91,157,255,0)');
+          return g;
+        }
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(c.parsed.y) } } },
+      scales: {
+        x: { grid: { color: grid }, ticks: { color: muted, maxTicksLimit: 6 } },
+        y: { grid: { color: grid }, ticks: { color: muted, callback: v => 'R$ ' + v } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('casaChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Bet365','Betano','Superbet','KTO'],
+      datasets: [{
+        data: [220, -45, 132, 40],
+        borderRadius: 8, borderSkipped: false,
+        backgroundColor: c => c.parsed.y >= 0 ? 'rgba(46,204,113,.85)' : 'rgba(255,93,93,.85)'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(c.parsed.y) } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: muted } },
+        y: { grid: { color: grid }, ticks: { color: muted, callback: v => 'R$ ' + v } }
+      }
+    }
+  });
+</script>
+</body>
+</html>

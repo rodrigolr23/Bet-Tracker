@@ -5,7 +5,10 @@ import { cupDays } from "@/data/calendar";
 import { splitMatch } from "@/data/flags";
 import { MatchFlags } from "@/components/TeamFlag";
 import type { Bet, BetInput, BetLeg, BetStatus } from "@/lib/bets/types";
-import { formatDate } from "@/lib/format";
+import { formatDate, isPastDate } from "@/lib/format";
+
+const firstOpenDate =
+  cupDays.find((d) => !isPastDate(d.date))?.date ?? cupDays[0]?.date ?? "";
 
 const STATUS_OPTIONS: { value: BetStatus; label: string }[] = [
   { value: "pendente", label: "Pendente" },
@@ -15,17 +18,21 @@ const STATUS_OPTIONS: { value: BetStatus; label: string }[] = [
 
 export function BetFormModal({
   editing,
+  initialLegs,
   onClose,
   onSubmit,
 }: {
   editing: Bet | null;
+  initialLegs?: BetLeg[];
   onClose: () => void;
   onSubmit: (input: BetInput) => void;
 }) {
   const [date, setDate] = useState<string>(
-    editing?.legs[0]?.date ?? cupDays[0]?.date ?? "",
+    editing?.legs[0]?.date ?? initialLegs?.[0]?.date ?? firstOpenDate,
   );
-  const [legs, setLegs] = useState<BetLeg[]>(editing?.legs ?? []);
+  const [legs, setLegs] = useState<BetLeg[]>(
+    editing?.legs ?? initialLegs ?? [],
+  );
   const [odds, setOdds] = useState<string>(editing ? String(editing.odds) : "");
   const [stake, setStake] = useState<string>(
     editing ? String(editing.stake) : "",
@@ -39,6 +46,7 @@ export function BetFormModal({
     () => cupDays.find((d) => d.date === date) ?? null,
     [date],
   );
+  const dayPast = isPastDate(date);
   const isMultipla = legs.length > 1;
 
   useEffect(() => {
@@ -128,6 +136,7 @@ export function BetFormModal({
                 {cupDays.map((d) => {
                   const active = d.date === date;
                   const picks = legs.filter((l) => l.date === d.date).length;
+                  const past = isPastDate(d.date);
                   return (
                     <button
                       key={d.date}
@@ -136,7 +145,9 @@ export function BetFormModal({
                       className={`relative flex w-[58px] shrink-0 flex-col items-center gap-0.5 rounded-[6px] border py-2 transition-colors ${
                         active
                           ? "border-yellow bg-yellow text-bg"
-                          : "border-border text-muted hover:border-muted hover:text-fg"
+                          : past
+                            ? "border-border text-muted-2 opacity-50"
+                            : "border-border text-muted hover:border-muted hover:text-fg"
                       }`}
                     >
                       <span className="font-mono text-[10px] tracking-[1px]">
@@ -169,28 +180,34 @@ export function BetFormModal({
           <div>
             <Label>Confrontos</Label>
             <div className="grid gap-2 sm:grid-cols-2">
-              {selectedDay?.games.map((g) => {
-                const active = isSelected(date, g);
-                return (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => toggleGame(date, g)}
-                    className={`flex items-center justify-between gap-2 rounded-[6px] border px-3 py-2.5 text-left text-[13px] font-semibold transition-colors ${
-                      active
-                        ? "border-green bg-green/10 text-fg"
-                        : "border-border bg-surface-2 text-muted hover:border-muted hover:text-fg"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <MatchFlags home={splitMatch(g)[0]} away={splitMatch(g)[1]} />
-                      <span>{g}</span>
-                    </span>
-                    <Checkbox checked={active} />
-                  </button>
-                );
-              })}
-              {(!selectedDay || selectedDay.games.length === 0) && (
+              {!dayPast &&
+                selectedDay?.games.map((g) => {
+                  const active = isSelected(date, g);
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => toggleGame(date, g)}
+                      className={`flex items-center justify-between gap-2 rounded-[6px] border px-3 py-2.5 text-left text-[13px] font-semibold transition-colors ${
+                        active
+                          ? "border-green bg-green/10 text-fg"
+                          : "border-border bg-surface-2 text-muted hover:border-muted hover:text-fg"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <MatchFlags home={splitMatch(g)[0]} away={splitMatch(g)[1]} />
+                        <span>{g}</span>
+                      </span>
+                      <Checkbox checked={active} />
+                    </button>
+                  );
+                })}
+              {dayPast && (
+                <div className="col-span-full rounded-[6px] border border-dashed border-border px-3 py-4 text-center font-mono text-[12px] text-muted-2">
+                  Jogos deste dia já encerrados — não é possível apostar.
+                </div>
+              )}
+              {!dayPast && (!selectedDay || selectedDay.games.length === 0) && (
                 <div className="col-span-full rounded-[6px] border border-dashed border-border px-3 py-4 text-center font-mono text-[12px] text-muted-2">
                   Sem jogos neste dia.
                 </div>

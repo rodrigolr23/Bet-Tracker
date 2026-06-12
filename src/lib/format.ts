@@ -18,6 +18,19 @@ export function formatPct(value: number, digits = 1): string {
   return `${value.toFixed(digits)}%`;
 }
 
+// Data de hoje no formato ISO local (yyyy-mm-dd).
+export function todayISO(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+// O jogo já passou? (data anterior a hoje — hoje ainda é apostável)
+export function isPastDate(iso: string): boolean {
+  return iso < todayISO();
+}
+
 // "2026-06-12" -> "12 Jun, 2026"
 export function formatDate(iso: string): string {
   if (!iso) return "—";

@@ -22,6 +22,15 @@ export function betDate(bet: Bet): string {
   return bet.legs[0]?.date ?? "";
 }
 
+// A aposta cobre este jogo (date + confronto)?
+export function betIncludesGame(
+  bet: Bet,
+  date: string,
+  match: string,
+): boolean {
+  return bet.legs.some((l) => l.date === date && l.match === match);
+}
+
 export type BetInput = Omit<Bet, "id">;
 
 export type BancaStats = {

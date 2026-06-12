@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useBets } from "@/lib/bets/store";
-import { betProfit, type Bet, type BetStatus } from "@/lib/bets/types";
+import {
+  betDate,
+  betProfit,
+  isMultipla,
+  type Bet,
+  type BetStatus,
+} from "@/lib/bets/types";
 import { formatDate, formatSignedBRL } from "@/lib/format";
 import { splitMatch } from "@/data/flags";
 import { MatchFlags } from "@/components/TeamFlag";
@@ -40,7 +46,9 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
   const rows = useMemo(
     () =>
       bets.filter((b) =>
-        `${b.match} ${b.date}`
+        b.legs
+          .map((l) => `${l.match} ${l.date}`)
+          .join(" ")
           .toLowerCase()
           .includes(query.trim().toLowerCase()),
       ),
@@ -53,11 +61,12 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
   }
 
   function exportCsv() {
-    const header = ["Data", "Confronto", "Odd", "Stake", "Status", "Resultado"];
+    const header = ["Data", "Tipo", "Confrontos", "Odd", "Stake", "Status", "Resultado"];
     const lines = bets.map((b) =>
       [
-        b.date,
-        b.match,
+        betDate(b),
+        isMultipla(b) ? "Múltipla" : "Simples",
+        b.legs.map((l) => l.match).join(" + "),
         b.odds.toFixed(2),
         b.stake.toFixed(2),
         statusLabel[b.status],
@@ -142,14 +151,28 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
                 style={{ gridTemplateColumns: COLS }}
               >
                 <span className="font-mono text-[13px] text-muted">
-                  {formatDate(b.date)}
+                  {formatDate(betDate(b))}
                 </span>
 
-                <div className="flex items-center gap-3">
-                  <MatchFlags home={splitMatch(b.match)[0]} away={splitMatch(b.match)[1]} />
-                  <span className="text-[14px] font-semibold text-fg">
-                    {b.match}
-                  </span>
+                <div className="min-w-0">
+                  {isMultipla(b) && (
+                    <span className="mb-1.5 inline-block rounded-[4px] border border-lavender/45 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.5px] text-lavender">
+                      MÚLTIPLA · {b.legs.length} JOGOS
+                    </span>
+                  )}
+                  <div className="space-y-1">
+                    {b.legs.map((l) => (
+                      <div
+                        key={`${l.date}-${l.match}`}
+                        className="flex items-center gap-2.5"
+                      >
+                        <MatchFlags home={splitMatch(l.match)[0]} away={splitMatch(l.match)[1]} />
+                        <span className="truncate text-[14px] font-semibold text-fg">
+                          {l.match}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <span className="text-right font-mono text-[13px] font-medium text-yellow">

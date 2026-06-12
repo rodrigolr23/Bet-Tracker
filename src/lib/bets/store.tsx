@@ -9,7 +9,7 @@ import {
   type BetStatus,
 } from "./types";
 
-const STORAGE_KEY = "bet-tracker:state:v3";
+const STORAGE_KEY = "bet-tracker:state:v4";
 
 type State = {
   hydrated: boolean;
@@ -47,8 +47,15 @@ function isValidBet(b: unknown): b is Bet {
   const x = b as Record<string, unknown>;
   return (
     typeof x.id === "string" &&
-    typeof x.match === "string" &&
-    typeof x.date === "string" &&
+    Array.isArray(x.legs) &&
+    x.legs.length > 0 &&
+    x.legs.every(
+      (l) =>
+        l &&
+        typeof l === "object" &&
+        typeof (l as Record<string, unknown>).date === "string" &&
+        typeof (l as Record<string, unknown>).match === "string",
+    ) &&
     typeof x.odds === "number" &&
     typeof x.stake === "number"
   );

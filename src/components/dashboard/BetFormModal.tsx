@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cupDays } from "@/data/calendar";
 import { splitMatch } from "@/data/flags";
 import { MatchFlags } from "@/components/TeamFlag";
-import type { Bet, BetInput, BetStatus } from "@/lib/bets/types";
+import type { Bet, BetInput, BetLeg, BetStatus } from "@/lib/bets/types";
+import { formatDate } from "@/lib/format";
 
 const STATUS_OPTIONS: { value: BetStatus; label: string }[] = [
   { value: "pendente", label: "Pendente" },
@@ -22,9 +23,9 @@ export function BetFormModal({
   onSubmit: (input: BetInput) => void;
 }) {
   const [date, setDate] = useState<string>(
-    editing?.date ?? cupDays[0]?.date ?? "",
+    editing?.legs[0]?.date ?? cupDays[0]?.date ?? "",
   );
-  const [match, setMatch] = useState<string>(editing?.match ?? "");
+  const [legs, setLegs] = useState<BetLeg[]>(editing?.legs ?? []);
   const [odds, setOdds] = useState<string>(editing ? String(editing.odds) : "");
   const [stake, setStake] = useState<string>(
     editing ? String(editing.stake) : "",
@@ -38,6 +39,7 @@ export function BetFormModal({
     () => cupDays.find((d) => d.date === date) ?? null,
     [date],
   );
+  const isMultipla = legs.length > 1;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -47,9 +49,25 @@ export function BetFormModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  function pickDay(day: (typeof cupDays)[number]) {
-    setDate(day.date);
-    if (!day.games.includes(match)) setMatch("");
+  function toggleGame(legDate: string, match: string) {
+    setLegs((prev) => {
+      const exists = prev.some(
+        (l) => l.date === legDate && l.match === match,
+      );
+      return exists
+        ? prev.filter((l) => !(l.date === legDate && l.match === match))
+        : [...prev, { date: legDate, match }];
+    });
+  }
+
+  function removeLeg(legDate: string, match: string) {
+    setLegs((prev) =>
+      prev.filter((l) => !(l.date === legDate && l.match === match)),
+    );
+  }
+
+  function isSelected(legDate: string, match: string) {
+    return legs.some((l) => l.date === legDate && l.match === match);
   }
 
   function scrollStrip(dir: -1 | 1) {
@@ -61,11 +79,13 @@ export function BetFormModal({
     const oddsNum = Number(odds.replace(",", "."));
     const stakeNum = Number(stake.replace(",", "."));
 
-    if (!match) return setError("Selecione o confronto.");
+    if (legs.length === 0) return setError("Selecione ao menos um confronto.");
     if (!(oddsNum > 1)) return setError("Odds deve ser maior que 1.");
     if (!(stakeNum > 0)) return setError("Stake deve ser maior que zero.");
 
-    onSubmit({ date, match, odds: oddsNum, stake: stakeNum, status });
+    // Ordena as legs por data para exibição consistente.
+    const ordered = [...legs].sort((a, b) => a.date.localeCompare(b.date));
+    onSubmit({ legs: ordered, odds: oddsNum, stake: stakeNum, status });
   }
 
   return (
@@ -107,12 +127,13 @@ export function BetFormModal({
               >
                 {cupDays.map((d) => {
                   const active = d.date === date;
+                  const picks = legs.filter((l) => l.date === d.date).length;
                   return (
                     <button
                       key={d.date}
                       type="button"
-                      onClick={() => pickDay(d)}
-                      className={`flex w-[58px] shrink-0 flex-col items-center gap-0.5 rounded-[6px] border py-2 transition-colors ${
+                      onClick={() => setDate(d.date)}
+                      className={`relative flex w-[58px] shrink-0 flex-col items-center gap-0.5 rounded-[6px] border py-2 transition-colors ${
                         active
                           ? "border-yellow bg-yellow text-bg"
                           : "border-border text-muted hover:border-muted hover:text-fg"
@@ -124,6 +145,15 @@ export function BetFormModal({
                       <span className="font-mono text-[17px] font-bold leading-none">
                         {d.day}
                       </span>
+                      {picks > 0 && (
+                        <span
+                          className={`absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full font-mono text-[9px] font-bold ${
+                            active ? "bg-bg text-yellow" : "bg-green text-bg"
+                          }`}
+                        >
+                          {picks}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -131,21 +161,21 @@ export function BetFormModal({
               <StripArrow dir="right" onClick={() => scrollStrip(1)} />
             </div>
             <div className="mt-1.5 font-mono text-[11px] text-muted-2">
-              Junho de 2026
+              Junho de 2026 · selecione um ou mais jogos
             </div>
           </div>
 
-          {/* Confronto */}
+          {/* Confronto (multi-seleção) */}
           <div>
-            <Label>Confronto</Label>
+            <Label>Confrontos</Label>
             <div className="grid gap-2 sm:grid-cols-2">
               {selectedDay?.games.map((g) => {
-                const active = g === match;
+                const active = isSelected(date, g);
                 return (
                   <button
                     key={g}
                     type="button"
-                    onClick={() => setMatch(g)}
+                    onClick={() => toggleGame(date, g)}
                     className={`flex items-center justify-between gap-2 rounded-[6px] border px-3 py-2.5 text-left text-[13px] font-semibold transition-colors ${
                       active
                         ? "border-green bg-green/10 text-fg"
@@ -156,11 +186,7 @@ export function BetFormModal({
                       <MatchFlags home={splitMatch(g)[0]} away={splitMatch(g)[1]} />
                       <span>{g}</span>
                     </span>
-                    {active && (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-green)" strokeWidth="2.5" className="shrink-0">
-                        <path d="M5 12l5 5L20 7" />
-                      </svg>
-                    )}
+                    <Checkbox checked={active} />
                   </button>
                 );
               })}
@@ -172,15 +198,56 @@ export function BetFormModal({
             </div>
           </div>
 
+          {/* Resumo da seleção */}
+          {legs.length > 0 && (
+            <div className="rounded-[6px] border border-border bg-surface-2/40 p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="font-mono text-[11px] uppercase tracking-[1px] text-muted-2">
+                  {isMultipla ? "Múltipla" : "Aposta simples"}
+                </span>
+                <span className="rounded-[4px] border border-green/40 px-1.5 py-0.5 font-mono text-[10px] text-green">
+                  {legs.length} {legs.length === 1 ? "jogo" : "jogos"}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {legs
+                  .slice()
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map((l) => (
+                    <span
+                      key={`${l.date}-${l.match}`}
+                      className="flex items-center gap-2 rounded-[5px] border border-border bg-surface px-2 py-1"
+                    >
+                      <MatchFlags home={splitMatch(l.match)[0]} away={splitMatch(l.match)[1]} />
+                      <span className="text-[12px] text-fg">{l.match}</span>
+                      <span className="font-mono text-[10px] text-muted-2">
+                        {formatDate(l.date)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeLeg(l.date, l.match)}
+                        className="text-muted-2 transition-colors hover:text-red"
+                        aria-label="Remover jogo"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                          <path d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                      </button>
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Odd + Stake */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Odd</Label>
+              <Label>{isMultipla ? "Odd total" : "Odd"}</Label>
               <input
                 inputMode="decimal"
                 value={odds}
                 onChange={(e) => setOdds(e.target.value)}
-                placeholder="1.90"
+                placeholder={isMultipla ? "Ex: 4.50" : "1.90"}
                 className={inputCls}
               />
             </div>
@@ -248,6 +315,22 @@ export function BetFormModal({
         </div>
       </form>
     </div>
+  );
+}
+
+function Checkbox({ checked }: { checked: boolean }) {
+  return (
+    <span
+      className={`grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border ${
+        checked ? "border-green bg-green text-bg" : "border-border"
+      }`}
+    >
+      {checked && (
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5">
+          <path d="M5 12l5 5L20 7" />
+        </svg>
+      )}
+    </span>
   );
 }
 

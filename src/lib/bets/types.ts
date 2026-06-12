@@ -1,13 +1,26 @@
 export type BetStatus = "pendente" | "green" | "red";
 
-export type Bet = {
-  id: string;
+export type BetLeg = {
   date: string; // ISO do jogo, ex.: "2026-06-13"
   match: string; // confronto, ex.: "Brasil × Marrocos"
-  odds: number;
+};
+
+export type Bet = {
+  id: string;
+  legs: BetLeg[]; // 1 = simples, 2+ = múltipla
+  odds: number; // odd total (combinada nas múltiplas)
   stake: number;
   status: BetStatus;
 };
+
+export function isMultipla(bet: Bet): boolean {
+  return bet.legs.length > 1;
+}
+
+// Data representativa da aposta (primeiro jogo).
+export function betDate(bet: Bet): string {
+  return bet.legs[0]?.date ?? "";
+}
 
 export type BetInput = Omit<Bet, "id">;
 

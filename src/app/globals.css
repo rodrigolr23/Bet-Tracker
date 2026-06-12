@@ -35,3 +35,49 @@ body {
 ::selection {
   background-color: color-mix(in srgb, var(--color-green) 28%, transparent);
 }
+
+@keyframes bt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bt-pop-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes bt-flash {
+  0% { background-color: color-mix(in srgb, var(--color-green) 20%, transparent); }
+  100% { background-color: transparent; }
+}
+
+.animate-fade-in {
+  animation: bt-fade-in 0.16s ease-out;
+}
+
+.animate-pop-in {
+  animation: bt-pop-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Feedback ao resolver/alterar uma linha. */
+.animate-flash {
+  animation: bt-flash 0.6s ease-out;
+}
+
+/* Pressão padrão em qualquer botão — micro-feedback ao clicar. */
+button:not(:disabled) {
+  transition: transform 0.08s ease;
+}
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-pop-in,
+  .animate-flash,
+  button:not(:disabled):active {
+    animation: none;
+    transform: none;
+  }
+}

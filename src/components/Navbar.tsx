@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useBets } from "@/lib/bets/store";
+import { formatBRL } from "@/lib/format";
 
 const links = [
   { href: "/dashboard", label: "Gestão de Banca" },
@@ -11,6 +13,7 @@ const links = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const { stats } = useBets();
 
   return (
     <nav className="border-b border-border bg-[#0c0f0f]">
@@ -51,7 +54,9 @@ export function Navbar() {
             <div className="font-mono text-[10px] uppercase tracking-[1.5px] text-muted-2">
               Saldo Disponível
             </div>
-            <div className="font-mono text-[15px] font-medium text-green">R$ 250,00</div>
+            <div className="font-mono text-[15px] font-medium text-green">
+              {formatBRL(stats.saldoDisponivel)}
+            </div>
           </div>
           <div className="h-9 w-px bg-border" />
           <div className="h-9 w-9 overflow-hidden rounded-[6px] border border-border bg-gradient-to-br from-surface-2 to-surface">

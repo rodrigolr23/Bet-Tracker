@@ -1,16 +1,9 @@
 export type BetStatus = "pendente" | "green" | "red";
 
-export type BetTeam = { code: string; flag: string };
-
 export type Bet = {
   id: string;
-  dayKey: string; // chave do dia no fixture (ver data/matches)
-  dayLabel: string; // rótulo exibível, ex.: "Hoje, 24 Nov"
-  matchId: string;
-  home: BetTeam;
-  away: BetTeam;
-  stadium: string;
-  time: string;
+  date: string; // ISO do jogo, ex.: "2026-06-13"
+  match: string; // confronto, ex.: "Brasil × Marrocos"
   odds: number;
   stake: number;
   status: BetStatus;

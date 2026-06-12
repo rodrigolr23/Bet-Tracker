@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import { useBets } from "@/lib/bets/store";
 import { betProfit, type Bet, type BetStatus } from "@/lib/bets/types";
-import { formatSignedBRL } from "@/lib/format";
+import { formatDate, formatSignedBRL } from "@/lib/format";
+import { splitMatch } from "@/data/flags";
+import { MatchFlags } from "@/components/TeamFlag";
 
 const COLS =
   "minmax(120px,1fr) minmax(200px,1.8fr) 80px 110px 100px 120px 130px";
@@ -38,7 +40,7 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
   const rows = useMemo(
     () =>
       bets.filter((b) =>
-        `${b.home.code} ${b.away.code} ${b.dayLabel}`
+        `${b.match} ${b.date}`
           .toLowerCase()
           .includes(query.trim().toLowerCase()),
       ),
@@ -51,12 +53,11 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
   }
 
   function exportCsv() {
-    const header = ["Dia", "Confronto", "Estádio", "Odd", "Stake", "Status", "Resultado"];
+    const header = ["Data", "Confronto", "Odd", "Stake", "Status", "Resultado"];
     const lines = bets.map((b) =>
       [
-        b.dayLabel,
-        `${b.home.code} vs ${b.away.code}`,
-        b.stadium,
+        b.date,
+        b.match,
         b.odds.toFixed(2),
         b.stake.toFixed(2),
         statusLabel[b.status],
@@ -141,25 +142,14 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
                 style={{ gridTemplateColumns: COLS }}
               >
                 <span className="font-mono text-[13px] text-muted">
-                  {b.dayLabel}
+                  {formatDate(b.date)}
                 </span>
 
                 <div className="flex items-center gap-3">
-                  <div className="flex -space-x-1.5">
-                    <Flag bg={b.home.flag} />
-                    <Flag bg={b.away.flag} />
-                  </div>
-                  <div>
-                    <div className="text-[14px] font-semibold text-fg">
-                      {b.home.code} <span className="text-muted-2">vs</span>{" "}
-                      {b.away.code}
-                    </div>
-                    {b.stadium && (
-                      <div className="font-mono text-[10px] tracking-[0.5px] text-muted-2">
-                        {b.stadium}
-                      </div>
-                    )}
-                  </div>
+                  <MatchFlags home={splitMatch(b.match)[0]} away={splitMatch(b.match)[1]} />
+                  <span className="text-[14px] font-semibold text-fg">
+                    {b.match}
+                  </span>
                 </div>
 
                 <span className="text-right font-mono text-[13px] font-medium text-yellow">
@@ -224,15 +214,6 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
         </div>
       </div>
     </section>
-  );
-}
-
-function Flag({ bg }: { bg: string }) {
-  return (
-    <span
-      className="h-[22px] w-[22px] rounded-full border border-bg ring-1 ring-white/10"
-      style={{ background: bg }}
-    />
   );
 }
 

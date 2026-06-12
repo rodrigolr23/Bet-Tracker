@@ -1,19 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { days, matches, type Match, type OddKey } from "@/data/matches";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { cupDays } from "@/data/calendar";
+import { splitMatch } from "@/data/flags";
+import { MatchFlags } from "@/components/TeamFlag";
 import type { Bet, BetInput, BetStatus } from "@/lib/bets/types";
 
 const STATUS_OPTIONS: { value: BetStatus; label: string }[] = [
   { value: "pendente", label: "Pendente" },
   { value: "green", label: "Green" },
   { value: "red", label: "Red" },
-];
-
-const ODD_KEYS: { key: OddKey; label: string }[] = [
-  { key: "home", label: "1" },
-  { key: "draw", label: "X" },
-  { key: "away", label: "2" },
 ];
 
 export function BetFormModal({
@@ -25,28 +21,22 @@ export function BetFormModal({
   onClose: () => void;
   onSubmit: (input: BetInput) => void;
 }) {
-  const [dayKey, setDayKey] = useState<string>(
-    editing?.dayKey ?? days[0].key,
+  const [date, setDate] = useState<string>(
+    editing?.date ?? cupDays[0]?.date ?? "",
   );
-  const [matchId, setMatchId] = useState<string>(editing?.matchId ?? "");
-  const [odds, setOdds] = useState<string>(
-    editing ? String(editing.odds) : "",
-  );
+  const [match, setMatch] = useState<string>(editing?.match ?? "");
+  const [odds, setOdds] = useState<string>(editing ? String(editing.odds) : "");
   const [stake, setStake] = useState<string>(
     editing ? String(editing.stake) : "",
   );
-  const [status, setStatus] = useState<BetStatus>(
-    editing?.status ?? "pendente",
-  );
+  const [status, setStatus] = useState<BetStatus>(editing?.status ?? "pendente");
   const [error, setError] = useState("");
 
-  const dayMatches = useMemo(
-    () => matches.filter((m) => m.day === dayKey),
-    [dayKey],
-  );
-  const selectedMatch = useMemo(
-    () => matches.find((m) => m.id === matchId) ?? null,
-    [matchId],
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  const selectedDay = useMemo(
+    () => cupDays.find((d) => d.date === date) ?? null,
+    [date],
   );
 
   useEffect(() => {
@@ -57,12 +47,13 @@ export function BetFormModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  function pickDay(key: string) {
-    setDayKey(key);
-    // Limpa a seleção de confronto se ele não pertence ao novo dia.
-    if (!matches.some((m) => m.id === matchId && m.day === key)) {
-      setMatchId("");
-    }
+  function pickDay(day: (typeof cupDays)[number]) {
+    setDate(day.date);
+    if (!day.games.includes(match)) setMatch("");
+  }
+
+  function scrollStrip(dir: -1 | 1) {
+    stripRef.current?.scrollBy({ left: dir * 220, behavior: "smooth" });
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -70,23 +61,11 @@ export function BetFormModal({
     const oddsNum = Number(odds.replace(",", "."));
     const stakeNum = Number(stake.replace(",", "."));
 
-    if (!selectedMatch) return setError("Selecione o confronto.");
+    if (!match) return setError("Selecione o confronto.");
     if (!(oddsNum > 1)) return setError("Odds deve ser maior que 1.");
     if (!(stakeNum > 0)) return setError("Stake deve ser maior que zero.");
 
-    const day = days.find((d) => d.key === selectedMatch.day);
-    onSubmit({
-      dayKey: selectedMatch.day,
-      dayLabel: day?.label ?? selectedMatch.day,
-      matchId: selectedMatch.id,
-      home: selectedMatch.home,
-      away: selectedMatch.away,
-      stadium: selectedMatch.stadium,
-      time: selectedMatch.time ?? selectedMatch.minute ?? "",
-      odds: oddsNum,
-      stake: stakeNum,
-      status,
-    });
+    onSubmit({ date, match, odds: oddsNum, stake: stakeNum, status });
   }
 
   return (
@@ -117,27 +96,42 @@ export function BetFormModal({
         </div>
 
         <div className="space-y-5 p-5">
-          {/* Dia */}
+          {/* Faixa de dias */}
           <div>
             <Label>Dia do jogo</Label>
-            <div className="flex flex-wrap gap-2">
-              {days.map((d) => {
-                const active = d.key === dayKey;
-                return (
-                  <button
-                    key={d.key}
-                    type="button"
-                    onClick={() => pickDay(d.key)}
-                    className={`rounded-[6px] border px-3.5 py-2 font-mono text-[12px] font-bold tracking-[0.5px] transition-colors ${
-                      active
-                        ? "border-yellow bg-yellow text-bg"
-                        : "border-border text-muted hover:border-muted hover:text-fg"
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2">
+              <StripArrow dir="left" onClick={() => scrollStrip(-1)} />
+              <div
+                ref={stripRef}
+                className="flex flex-1 gap-2 overflow-x-auto scroll-smooth py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {cupDays.map((d) => {
+                  const active = d.date === date;
+                  return (
+                    <button
+                      key={d.date}
+                      type="button"
+                      onClick={() => pickDay(d)}
+                      className={`flex w-[58px] shrink-0 flex-col items-center gap-0.5 rounded-[6px] border py-2 transition-colors ${
+                        active
+                          ? "border-yellow bg-yellow text-bg"
+                          : "border-border text-muted hover:border-muted hover:text-fg"
+                      }`}
+                    >
+                      <span className="font-mono text-[10px] tracking-[1px]">
+                        {d.weekday}
+                      </span>
+                      <span className="font-mono text-[17px] font-bold leading-none">
+                        {d.day}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <StripArrow dir="right" onClick={() => scrollStrip(1)} />
+            </div>
+            <div className="mt-1.5 font-mono text-[11px] text-muted-2">
+              Junho de 2026
             </div>
           </div>
 
@@ -145,20 +139,34 @@ export function BetFormModal({
           <div>
             <Label>Confronto</Label>
             <div className="grid gap-2 sm:grid-cols-2">
-              {dayMatches.map((m) => (
-                <MatchOption
-                  key={m.id}
-                  match={m}
-                  selected={m.id === matchId}
-                  onSelect={() => {
-                    setMatchId(m.id);
-                    if (!odds) setOdds(String(m.odds.home));
-                  }}
-                />
-              ))}
-              {dayMatches.length === 0 && (
+              {selectedDay?.games.map((g) => {
+                const active = g === match;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setMatch(g)}
+                    className={`flex items-center justify-between gap-2 rounded-[6px] border px-3 py-2.5 text-left text-[13px] font-semibold transition-colors ${
+                      active
+                        ? "border-green bg-green/10 text-fg"
+                        : "border-border bg-surface-2 text-muted hover:border-muted hover:text-fg"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <MatchFlags home={splitMatch(g)[0]} away={splitMatch(g)[1]} />
+                      <span>{g}</span>
+                    </span>
+                    {active && (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-green)" strokeWidth="2.5" className="shrink-0">
+                        <path d="M5 12l5 5L20 7" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+              {(!selectedDay || selectedDay.games.length === 0) && (
                 <div className="col-span-full rounded-[6px] border border-dashed border-border px-3 py-4 text-center font-mono text-[12px] text-muted-2">
-                  Sem jogos cadastrados neste dia.
+                  Sem jogos neste dia.
                 </div>
               )}
             </div>
@@ -175,21 +183,6 @@ export function BetFormModal({
                 placeholder="1.90"
                 className={inputCls}
               />
-              {selectedMatch && (
-                <div className="mt-2 flex gap-1.5">
-                  {ODD_KEYS.map(({ key, label }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setOdds(String(selectedMatch.odds[key]))}
-                      className="flex-1 rounded-[5px] border border-border bg-surface-2 py-1.5 font-mono text-[11px] text-muted transition-colors hover:border-muted hover:text-fg"
-                      title={`Usar odd ${label}`}
-                    >
-                      {label} · {selectedMatch.odds[key].toFixed(2)}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
             <div>
               <Label>Stake (R$)</Label>
@@ -258,58 +251,24 @@ export function BetFormModal({
   );
 }
 
-function MatchOption({
-  match,
-  selected,
-  onSelect,
+function StripArrow({
+  dir,
+  onClick,
 }: {
-  match: Match;
-  selected: boolean;
-  onSelect: () => void;
+  dir: "left" | "right";
+  onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      onClick={onSelect}
-      className={`flex items-center justify-between gap-3 rounded-[6px] border px-3 py-2.5 text-left transition-colors ${
-        selected
-          ? "border-green bg-green/10"
-          : "border-border bg-surface-2 hover:border-muted"
-      }`}
+      onClick={onClick}
+      aria-label={dir === "left" ? "Dias anteriores" : "Próximos dias"}
+      className="grid h-9 w-7 shrink-0 place-items-center rounded-[5px] border border-border text-muted transition-colors hover:border-muted hover:text-fg"
     >
-      <div className="flex items-center gap-2.5">
-        <div className="flex -space-x-1.5">
-          <Flag bg={match.home.flag} />
-          <Flag bg={match.away.flag} />
-        </div>
-        <div>
-          <div className="text-[13px] font-semibold text-fg">
-            {match.home.code} <span className="text-muted-2">vs</span>{" "}
-            {match.away.code}
-          </div>
-          <div className="font-mono text-[10px] tracking-[0.5px] text-muted-2">
-            {match.status === "live"
-              ? `AO VIVO ${match.minute ?? ""}`
-              : match.time}{" "}
-            · {match.stadium}
-          </div>
-        </div>
-      </div>
-      {selected && (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-green)" strokeWidth="2.5">
-          <path d="M5 12l5 5L20 7" />
-        </svg>
-      )}
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d={dir === "left" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"} />
+      </svg>
     </button>
-  );
-}
-
-function Flag({ bg }: { bg: string }) {
-  return (
-    <span
-      className="h-[22px] w-[22px] rounded-full border border-bg ring-1 ring-white/10"
-      style={{ background: bg }}
-    />
   );
 }
 

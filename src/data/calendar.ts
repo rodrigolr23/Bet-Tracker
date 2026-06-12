@@ -26,6 +26,24 @@ export const june2026: Record<number, DayGames> = {
 
 export const weekdays = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
+export type CupDay = {
+  date: string; // ISO, ex.: "2026-06-13"
+  day: number; // dia do mês
+  weekday: string; // ex.: "SÁB"
+  games: string[]; // confrontos do dia ("Time × Time")
+};
+
+// Dias reais da Copa 2026 (junho), ordenados — derivado de `june2026`.
+export const cupDays: CupDay[] = Object.keys(june2026)
+  .map(Number)
+  .sort((a, b) => a - b)
+  .map((day) => ({
+    date: `2026-06-${String(day).padStart(2, "0")}`,
+    day,
+    weekday: weekdays[new Date(2026, 5, day).getDay()],
+    games: june2026[day].games,
+  }));
+
 export const monthNames = [
   "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
   "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",

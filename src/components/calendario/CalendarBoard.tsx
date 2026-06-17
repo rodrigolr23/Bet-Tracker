@@ -12,7 +12,7 @@ type View = "lista" | "calendario";
 type FormState = { editing: Bet | null; initialLegs?: BetLeg[] };
 
 export function CalendarBoard() {
-  const { addBet, updateBet } = useBets();
+  const { addBet, updateBet, removeBet } = useBets();
   const [view, setView] = useState<View>("lista");
   const [year, setYear] = useState(2026);
   const [month, setMonth] = useState(5); // junho (0-indexed)
@@ -122,6 +122,14 @@ export function CalendarBoard() {
           initialLegs={form.initialLegs}
           onClose={() => setForm(null)}
           onSubmit={submitBet}
+          onDelete={
+            form.editing
+              ? () => {
+                  if (form.editing) removeBet(form.editing.id);
+                  setForm(null);
+                }
+              : undefined
+          }
         />
       )}
     </div>

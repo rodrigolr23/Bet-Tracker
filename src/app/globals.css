@@ -7,6 +7,8 @@
   --color-row: #171b1a;
   --color-border: #93d6a0;
   --color-border-soft: rgba(147, 214, 160, 0.2);
+  --color-line: #262629;
+  --color-line-soft: #1f1f22;
   --color-fg: #ededed;
   --color-muted: #8d9b91;
   --color-muted-2: #66766b;
@@ -17,8 +19,8 @@
   --color-red: #f06d6d;
   --color-lavender: #aab4f0;
 
-  --font-display: var(--font-jetbrains);
-  --font-mono: var(--font-jetbrains);
+  --font-display: var(--font-sans);
+  --font-mono: var(--font-sans);
 }
 
 html {

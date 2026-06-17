@@ -21,11 +21,13 @@ export function BetFormModal({
   initialLegs,
   onClose,
   onSubmit,
+  onDelete,
 }: {
   editing: Bet | null;
   initialLegs?: BetLeg[];
   onClose: () => void;
   onSubmit: (input: BetInput) => void;
+  onDelete?: () => void;
 }) {
   const [date, setDate] = useState<string>(
     editing?.legs[0]?.date ?? initialLegs?.[0]?.date ?? firstOpenDate,
@@ -315,20 +317,33 @@ export function BetFormModal({
           <div className="px-5 pb-1 font-mono text-[12px] text-red">{error}</div>
         )}
 
-        <div className="flex justify-end gap-3 border-t border-border px-5 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-[5px] border border-border bg-surface-2 px-4 py-2.5 font-mono text-[13px] text-muted transition-colors hover:text-fg"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="rounded-[5px] bg-green-bright px-4 py-2.5 font-mono text-[13px] font-semibold text-bg transition-opacity hover:opacity-90"
-          >
-            {editing ? "Salvar" : "Registrar"}
-          </button>
+        <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">
+          {editing && onDelete ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="rounded-[5px] border border-border px-4 py-2.5 font-mono text-[13px] text-muted transition-colors hover:border-red/40 hover:text-red"
+            >
+              Excluir
+            </button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-[5px] border border-border bg-surface-2 px-4 py-2.5 font-mono text-[13px] text-muted transition-colors hover:text-fg"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="rounded-[5px] bg-green-bright px-4 py-2.5 font-mono text-[13px] font-semibold text-bg transition-opacity hover:opacity-90"
+            >
+              {editing ? "Salvar" : "Registrar"}
+            </button>
+          </div>
         </div>
       </form>
     </div>

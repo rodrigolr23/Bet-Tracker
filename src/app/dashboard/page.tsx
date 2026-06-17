@@ -8,7 +8,7 @@ import type { Bet, BetInput } from "@/lib/bets/types";
 import { formatBRL, formatPct, formatSignedBRL } from "@/lib/format";
 
 export default function DashboardPage() {
-  const { bets, stats, addBet, updateBet } = useBets();
+  const { bets, stats, addBet, updateBet, removeBet } = useBets();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Bet | null>(null);
 
@@ -126,6 +126,15 @@ export default function DashboardPage() {
             setEditing(null);
           }}
           onSubmit={handleSubmit}
+          onDelete={
+            editing
+              ? () => {
+                  removeBet(editing.id);
+                  setModalOpen(false);
+                  setEditing(null);
+                }
+              : undefined
+          }
         />
       )}
     </div>

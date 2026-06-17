@@ -14,10 +14,22 @@ import { splitMatch } from "@/data/flags";
 import { MatchFlags } from "@/components/TeamFlag";
 
 const COLS =
-  "minmax(120px,1fr) minmax(200px,1.8fr) 80px 110px 100px 120px 130px";
+  "minmax(110px,1fr) minmax(200px,2fr) minmax(90px,1fr) minmax(90px,1fr) minmax(90px,1fr) minmax(100px,1fr)";
+
+const HEADERS = ["DIA DO JOGO", "CONFRONTO", "ODD", "STAKE (R$)", "STATUS", "RESULTADO"];
+
+// Alinhamento do CABEÇALHO de cada coluna.
+const ALIGN = [
+  "justify-center", // DIA
+  "justify-center", // CONFRONTO
+  "justify-center", // ODD
+  "justify-center", // STAKE
+  "justify-center", // STATUS
+  "justify-end", // RESULTADO
+];
 
 const statusTone: Record<BetStatus, string> = {
-  pendente: "border-border text-muted",
+  pendente: "border-line text-muted",
   green: "border-green/45 text-green",
   red: "border-red/45 text-red",
 };
@@ -38,27 +50,32 @@ function csvEscape(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
+const PAGE_SIZE = 4;
+
 export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
-  const { bets, setStatus, removeBet, hydrated } = useBets();
+  const { bets, hydrated } = useBets();
   const [query, setQuery] = useState("");
-  const [flashId, setFlashId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const rows = useMemo(
     () =>
-      bets.filter((b) =>
-        b.legs
-          .map((l) => `${l.match} ${l.date}`)
-          .join(" ")
-          .toLowerCase()
-          .includes(query.trim().toLowerCase()),
-      ),
+      // Ordem de chegada: o store guarda a mais recente no início (prepend),
+      // então invertemos para a primeira aposta registrada aparecer primeiro.
+      bets
+        .filter((b) =>
+          b.legs
+            .map((l) => `${l.match} ${l.date}`)
+            .join(" ")
+            .toLowerCase()
+            .includes(query.trim().toLowerCase()),
+        )
+        .reverse(),
     [bets, query],
   );
 
-  function settle(id: string, status: BetStatus) {
-    setStatus(id, status);
-    setFlashId(id);
-  }
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const current = Math.min(page, totalPages); // clampa se a lista encolher
+  const pageRows = rows.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
 
   function exportCsv() {
     const header = ["Data", "Tipo", "Confrontos", "Odd", "Stake", "Status", "Resultado"];
@@ -87,9 +104,9 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
   }
 
   return (
-    <section className="rounded-[6px] border border-border bg-surface">
+    <section className="overflow-hidden rounded-[6px] border border-line bg-[#1a1c1c]">
       {/* Card header */}
-      <div className="flex flex-col gap-4 border-b border-border p-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 border-b border-line p-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="font-mono text-[15px] font-bold tracking-[1px] text-fg">
             HISTÓRICO ANALÍTICO
@@ -101,15 +118,18 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
               placeholder="Buscar por seleção..."
-              className="w-full rounded-[5px] border border-border bg-bg py-2.5 pl-9 pr-3 font-mono text-[13px] text-fg outline-none placeholder:text-muted-2 focus:border-muted"
+              className="w-full rounded-[5px] border border-line bg-bg py-2.5 pl-9 pr-3 font-mono text-[13px] text-fg outline-none placeholder:text-muted-2 focus:border-muted"
             />
           </div>
           <button
             onClick={exportCsv}
             disabled={bets.length === 0}
-            className="flex shrink-0 items-center gap-2 rounded-[5px] border border-border bg-surface-2 px-3.5 py-2.5 font-mono text-[13px] text-muted transition-colors hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex shrink-0 items-center gap-2 rounded-[5px] border border-line bg-surface-2 px-3.5 py-2.5 font-mono text-[13px] text-muted transition-colors hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
           >
             <DownloadIcon /> CSV
           </button>
@@ -117,103 +137,85 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto bg-[#0c0f0f]">
         <div className="min-w-[860px]">
           {/* Head */}
           <div
-            className="grid items-center gap-3 border-b border-border bg-surface-2/40 px-5 py-3.5"
+            className="grid items-stretch divide-x divide-line border-b border-line bg-[#1e2020]"
             style={{ gridTemplateColumns: COLS }}
           >
-            {["DIA DO JOGO", "CONFRONTO", "ODD", "STAKE (R$)", "STATUS", "RESULTADO", "AÇÕES"].map(
-              (h, i) => (
-                <span
-                  key={h}
-                  className={`font-mono text-[11px] tracking-[1px] text-muted-2 ${
-                    i === 2 || i === 3 || i === 5 ? "text-right" : ""
-                  }`}
-                >
+            {HEADERS.map((h, i) => (
+              <div key={h} className={`flex items-center px-4 py-3.5 ${ALIGN[i]}`}>
+                <span className="font-mono text-[11px] tracking-[1px] text-muted-2">
                   {h}
                 </span>
-              ),
-            )}
+              </div>
+            ))}
           </div>
 
           {/* Rows */}
-          {rows.map((b) => {
+          {pageRows.map((b) => {
             const profit = betProfit(b);
             return (
               <div
                 key={b.id}
-                onAnimationEnd={() => flashId === b.id && setFlashId(null)}
-                className={`grid items-center gap-3 border-b border-border-soft px-5 py-4 last:border-b-0 hover:bg-surface-2/30 ${
-                  flashId === b.id ? "animate-flash" : ""
-                }`}
+                onClick={() => onEdit(b)}
+                title="Editar aposta"
+                className="grid cursor-pointer items-stretch divide-x divide-line border-b border-line transition-colors last:border-b-0 hover:bg-surface-2/30"
                 style={{ gridTemplateColumns: COLS }}
               >
-                <span className="font-mono text-[13px] text-muted">
-                  {formatDate(betDate(b))}
-                </span>
+                <Cell align="justify-center">
+                  <span className="font-mono text-[13px] text-muted">
+                    {formatDate(betDate(b))}
+                  </span>
+                </Cell>
 
-                <div className="min-w-0">
-                  {isMultipla(b) && (
-                    <span className="mb-1.5 inline-block rounded-[4px] border border-lavender/45 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.5px] text-lavender">
-                      MÚLTIPLA · {b.legs.length} JOGOS
-                    </span>
-                  )}
-                  <div className="space-y-1">
-                    {b.legs.map((l) => (
-                      <div
-                        key={`${l.date}-${l.match}`}
-                        className="flex items-center gap-2.5"
-                      >
-                        <MatchFlags home={splitMatch(l.match)[0]} away={splitMatch(l.match)[1]} />
-                        <span className="truncate text-[14px] font-semibold text-fg">
-                          {l.match}
-                        </span>
-                      </div>
-                    ))}
+                <Cell align="justify-center">
+                  <div className="min-w-0">
+                    {isMultipla(b) && (
+                      <span className="mb-1.5 inline-block rounded-[4px] border border-lavender/45 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.5px] text-lavender">
+                        MÚLTIPLA · {b.legs.length} JOGOS
+                      </span>
+                    )}
+                    <div className="space-y-1">
+                      {b.legs.map((l) => (
+                        <div
+                          key={`${l.date}-${l.match}`}
+                          className="flex items-center gap-2.5"
+                        >
+                          <MatchFlags home={splitMatch(l.match)[0]} away={splitMatch(l.match)[1]} />
+                          <span className="truncate text-[14px] font-semibold text-fg">
+                            {l.match}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </Cell>
 
-                <span className="text-right font-mono text-[13px] font-medium text-yellow">
-                  {b.odds.toFixed(2)}
-                </span>
+                <Cell align="justify-center">
+                  <span className="font-mono text-[13px] font-medium text-yellow">
+                    {b.odds.toFixed(2)}
+                  </span>
+                </Cell>
 
-                <span className="text-right font-mono text-[13px] text-fg">
-                  {b.stake.toFixed(2)}
-                </span>
+                <Cell align="justify-center">
+                  <span className="font-mono text-[13px] text-fg">
+                    {b.stake.toFixed(2)}
+                  </span>
+                </Cell>
 
-                <div>
+                <Cell align="justify-center">
                   <span className={`inline-block rounded-[4px] border px-2.5 py-1 font-mono text-[10px] tracking-[0.5px] ${statusTone[b.status]}`}>
                     {statusLabel[b.status]}
                   </span>
-                </div>
+                </Cell>
 
-                <span className={`text-right font-mono text-[13px] font-medium ${resultTone[b.status]}`}>
-                  {b.status === "pendente" ? "---" : formatSignedBRL(profit)}
-                </span>
-
-                <div className="flex items-center gap-1.5">
-                  {b.status !== "green" && (
-                    <SettleBtn label="G" tone="green" title="Marcar Green" onClick={() => settle(b.id, "green")} />
-                  )}
-                  {b.status !== "red" && (
-                    <SettleBtn label="R" tone="red" title="Marcar Red" onClick={() => settle(b.id, "red")} />
-                  )}
-                  {b.status !== "pendente" && (
-                    <SettleBtn label="•" tone="muted" title="Voltar a pendente" onClick={() => settle(b.id, "pendente")} />
-                  )}
-                  <IconBtn title="Editar" onClick={() => onEdit(b)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
-                    </svg>
-                  </IconBtn>
-                  <IconBtn title="Excluir" danger onClick={() => removeBet(b.id)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
-                    </svg>
-                  </IconBtn>
-                </div>
+                <Cell align="justify-end">
+                  <span className={`font-mono text-[13px] font-medium ${resultTone[b.status]}`}>
+                    {b.status === "pendente" ? "---" : formatSignedBRL(profit)}
+                  </span>
+                </Cell>
               </div>
             );
           })}
@@ -236,54 +238,55 @@ export function HistoryTable({ onEdit }: { onEdit: (bet: Bet) => void }) {
           )}
         </div>
       </div>
+
+      {/* Paginação */}
+      {rows.length > 0 && (
+        <div className="flex flex-col gap-3 border-t border-line px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <span className="font-mono text-[12px] tracking-[0.5px] text-muted-2">
+            PÁGINA {current} DE {totalPages} ({rows.length}{" "}
+            {rows.length === 1 ? "REGISTRO" : "REGISTROS"})
+          </span>
+          <div className="flex items-center gap-1.5">
+            <PageBtn disabled={current === 1} onClick={() => setPage(current - 1)}>
+              Anterior
+            </PageBtn>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <PageBtn key={p} active={p === current} onClick={() => setPage(p)}>
+                {p}
+              </PageBtn>
+            ))}
+            <PageBtn
+              disabled={current === totalPages}
+              onClick={() => setPage(current + 1)}
+            >
+              Próximo
+            </PageBtn>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
 
-function SettleBtn({
-  label,
-  tone,
-  title,
-  onClick,
-}: {
-  label: string;
-  tone: "green" | "red" | "muted";
-  title: string;
-  onClick: () => void;
-}) {
-  const tones = {
-    green: "border-green/40 text-green hover:bg-green/15",
-    red: "border-red/40 text-red hover:bg-red/15",
-    muted: "border-border text-muted-2 hover:text-fg",
-  };
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      className={`grid h-7 w-7 place-items-center rounded-[5px] border font-mono text-[12px] font-bold transition-colors ${tones[tone]}`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function IconBtn({
-  title,
-  danger,
-  onClick,
+function PageBtn({
   children,
+  active,
+  disabled,
+  onClick,
 }: {
-  title: string;
-  danger?: boolean;
-  onClick: () => void;
   children: React.ReactNode;
+  active?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
 }) {
   return (
     <button
-      title={title}
       onClick={onClick}
-      className={`grid h-7 w-7 place-items-center rounded-[5px] border border-border text-muted transition-colors hover:text-fg ${
-        danger ? "hover:border-red/40 hover:text-red" : "hover:border-muted"
+      disabled={disabled}
+      className={`min-w-[34px] rounded-[5px] border px-3 py-1.5 font-mono text-[12px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+        active
+          ? "border-green bg-green/15 text-green"
+          : "border-line bg-surface-2 text-muted hover:text-fg"
       }`}
     >
       {children}
@@ -291,9 +294,21 @@ function IconBtn({
   );
 }
 
+function Cell({
+  align = "justify-start",
+  children,
+}: {
+  align?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`flex items-center px-4 py-4 ${align}`}>{children}</div>
+  );
+}
+
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-[4px] border border-border bg-surface-2 px-2.5 py-1 font-mono text-[11px] tracking-[0.5px] text-muted-2">
+    <span className="rounded-[4px] border border-line bg-surface-2 px-2.5 py-1 font-mono text-[11px] tracking-[0.5px] text-muted-2">
       {children}
     </span>
   );
